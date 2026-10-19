@@ -1,0 +1,36 @@
+# Local stack: API + Prometheus + Grafana.
+#   docker compose up --build
+# API:        http://localhost:8000/docs
+# Prometheus: http://localhost:9090
+# Grafana:    http://localhost:3000  (admin / admin)
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      STORAGE_BACKEND: local
+    volumes:
+      - vod-data:/data
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
+    depends_on:
+      - api
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+
+volumes:
+  vod-data:
