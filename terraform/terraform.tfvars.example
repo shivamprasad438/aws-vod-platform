@@ -1,0 +1,4 @@
+# Copy to terraform.tfvars and edit. bucket_name must be globally unique.
+aws_region   = "ap-south-1"
+project_name = "vod"
+bucket_name  = "your-name-vod-videos-12345"

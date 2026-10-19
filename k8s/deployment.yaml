@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vod-api
+  namespace: vod
+  labels:
+    app: vod-api
+spec:
+  replicas: 1                 # see pvc.yaml: SQLite means a single replica
+  strategy:
+    type: Recreate            # the ReadWriteOnce volume cannot be mounted by two pods
+  selector:
+    matchLabels:
+      app: vod-api
+  template:
+    metadata:
+      labels:
+        app: vod-api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "8000"
+    spec:
+      serviceAccountName: vod-api
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+      containers:
+        - name: api
+          image: REPLACE_ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/vod-api:latest   # terraform output ecr_repository_url
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+              name: http
+          envFrom:
+            - configMapRef:
+                name: vod-api-config
+          resources:
+            requests:
+              cpu: "500m"
+              memory: 512Mi
+            limits:
+              cpu: "2"        # FFmpeg is CPU heavy; the limit stops one upload starving the node
+              memory: 2Gi
+          startupProbe:
+            httpGet: {path: /health, port: http}
+            failureThreshold: 30
+            periodSeconds: 2
+          livenessProbe:
+            httpGet: {path: /health, port: http}
+            periodSeconds: 20
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet: {path: /ready, port: http}
+            periodSeconds: 10
+            timeoutSeconds: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: vod-data

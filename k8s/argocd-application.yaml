@@ -1,0 +1,24 @@
+# Optional GitOps: Argo CD watches the k8s/ folder of your repo and keeps the cluster in sync.
+#   kubectl apply -f k8s/argocd-application.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vod-api
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/shivamprasad438/aws-vod-platform.git
+    targetRevision: main
+    path: k8s
+    directory:
+      exclude: argocd-application.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: vod
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,12 @@
+# Holds the SQLite metadata file. SQLite supports one writer, so the API runs as a
+# single replica. For several replicas, move metadata to RDS or DynamoDB.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vod-data
+  namespace: vod
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 5Gi

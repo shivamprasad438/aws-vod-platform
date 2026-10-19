@@ -1,0 +1,28 @@
+groups:
+  - name: vod-api
+    rules:
+      - alert: VodHighProcessingFailureRate
+        expr: |
+          sum(rate(vod_videos_processed_total{result="failed"}[15m]))
+            / clamp_min(sum(rate(vod_videos_processed_total[15m])), 0.0001) > 0.2
+        for: 10m
+        labels: {severity: warning}
+        annotations:
+          summary: "More than 20% of video jobs are failing"
+          runbook: "docs/TROUBLESHOOTING.md#videos-stuck-or-failing"
+
+      - alert: VodSlowProcessing
+        expr: histogram_quantile(0.95, sum(rate(vod_processing_seconds_bucket[15m])) by (le)) > 300
+        for: 15m
+        labels: {severity: warning}
+        annotations:
+          summary: "p95 video processing time is above 5 minutes"
+          runbook: "docs/TROUBLESHOOTING.md#slow-processing"
+
+      - alert: VodApi5xx
+        expr: sum(rate(vod_http_requests_total{status=~"5.."}[5m])) > 0.05
+        for: 5m
+        labels: {severity: critical}
+        annotations:
+          summary: "API is returning 5xx errors"
+          runbook: "docs/TROUBLESHOOTING.md#api-returns-5xx"
